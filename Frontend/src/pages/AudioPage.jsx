@@ -87,7 +87,7 @@ export default function AudioPage() {
       alert("Microphone access denied. Please allow microphone permissions.");
     }
   };
-  
+
   const stopRecording = () => {
     if (
       mediaRecorderRef.current &&
@@ -119,14 +119,11 @@ export default function AudioPage() {
     try {
       console.log("Uploading audio...");
       const response = await axios.post("/api/api/v1/processAudio", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // Axios automatically parses JSON response
-      const data = response.data;
-      console.log("Response from server: ", data);
+      console.log("Response from server: ", response.data);
+      console.log("Transcribed Text (Hindi): ", response.data.transcription);
     } catch (error) {
       console.error("Error uploading audio: ", error);
     }

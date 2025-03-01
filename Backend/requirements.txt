@@ -1,0 +1,6 @@
+fastapi[standard]
+aiohttp
+python-dotenv
+transformers
+torch
+unsloth
