@@ -132,7 +132,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import aiohttp
 from dotenv import load_dotenv
-# from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM
 # from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 # import torch
 # from unsloth import FastLanguageModel
@@ -171,23 +171,23 @@ async def transcribe_audio(audio_bytes):
         print(f"Deepgram Error: {e}")
         return None
 
-# # 🔹 Load Hinglish → English Translation Model
-# try:
-#     tokenizer_hi_en = AutoTokenizer.from_pretrained("rudrashah/RLM-hinglish-translator")
-#     model_hi_en = AutoModelForCausalLM.from_pretrained("rudrashah/RLM-hinglish-translator")
-# except Exception as e:
-#     print(f"❌ Error loading Hinglish → English model: {e}")
-#     tokenizer_hi_en, model_hi_en = None, None
+# 🔹 Load Hinglish → English Translation Model
+try:
+    tokenizer_hi_en = AutoTokenizer.from_pretrained("rudrashah/RLM-hinglish-translator")
+    model_hi_en = AutoModelForCausalLM.from_pretrained("rudrashah/RLM-hinglish-translator")
+except Exception as e:
+    print(f"❌ Error loading Hinglish → English model: {e}")
+    tokenizer_hi_en, model_hi_en = None, None
 
-# def hinglish_to_english(text):
-#     """Translate Hinglish to English."""
-#     if tokenizer_hi_en is None or model_hi_en is None:
-#         return "Translation model not loaded."
+def hinglish_to_english(text):
+    """Translate Hinglish to English."""
+    if tokenizer_hi_en is None or model_hi_en is None:
+        return "Translation model not loaded."
     
-#     template = "Hinglish:\n{hi_en}\n\nEnglish:\n"
-#     input_text = tokenizer_hi_en(template.format(hi_en=text), return_tensors="pt")
-#     output = model_hi_en.generate(**input_text)
-#     return tokenizer_hi_en.decode(output[0]).strip()
+    template = "Hinglish:\n{hi_en}\n\nEnglish:\n"
+    input_text = tokenizer_hi_en(template.format(hi_en=text), return_tensors="pt")
+    output = model_hi_en.generate(**input_text)
+    return tokenizer_hi_en.decode(output[0]).strip()
 
 # # 🔹 Lazy Load English → Hinglish Model
 # tokenizer_en_hi = None
@@ -236,7 +236,7 @@ async def process_audio(name: str = Form(...), purpose: str = Form(...), audio: 
         return {"error": "Failed to transcribe audio"}
 
     # 🔹 Step 2: Hinglish → English Translation
-    # english_text = hinglish_to_english(transcript)
+    english_text = hinglish_to_english(transcript)
 
     # # 🔹 Step 3: Generate AI Response
     # ai_response = generate_ai_response(english_text)
@@ -249,7 +249,7 @@ async def process_audio(name: str = Form(...), purpose: str = Form(...), audio: 
 
     return {
         "transcription": transcript,
-        # "translated_english": english_text,
+        "translated_english": english_text,
         # "ai_response": ai_response,
         # "final_hinglish": hinglish_response
     }
