@@ -12,27 +12,62 @@ load_dotenv()
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 DEEPGRAM_URL = "https://api.deepgram.com/v1/listen"
 
-# 🔹 Load Transformer AI Model for Text Generation
-try:
-    if torch.cuda.is_available():
-        device = 0  # GPU
-        print(f"✅ Using GPU: {torch.cuda.get_device_name(0)}")
-    else:
-        device = -1  # CPU
-        print("⚠️ GPU not available. Falling back to CPU.")
+# # ✅ Load TinyLlama model
+# try:
+#     model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+#     tokenizer = AutoTokenizer.from_pretrained(model_name)
+#     model = AutoModelForCausalLM.from_pretrained(
+#         model_name,
+#         torch_dtype=torch.float16
+#     ).cuda()
+#     print(f"✅ Loaded {model_name} on GPU: {torch.cuda.get_device_name(0)}")
+# except Exception as e:
+#     print(f"❌ Error loading TinyLlama model: {e}")
+#     tokenizer = None
+#     model = None
 
-    qa_pipeline = pipeline("text2text-generation", model="google/flan-t5-small", device=device)
-except Exception as e:
-    print(f"❌ Error loading AI model: {e}")
-    qa_pipeline = None
-
-def generate_ai_response(text: str) -> str:
-    """Generate AI response from Flan-T5 small model."""
-    if qa_pipeline is None:
-        return "AI Model not loaded properly."
+# def generate_ai_response(text: str) -> str:
+#     """Generate AI response using TinyLlama."""
+#     if model is None or tokenizer is None:
+#         return "AI Model not loaded properly."
     
-    response = qa_pipeline(text, max_length=100)
-    return response[0].get("generated_text", "").strip()
+#     try:
+#         prompt = f"<|system|> You are a helpful assistant.\n<|user|> {text}\n<|assistant|>"
+#         inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
+#         outputs = model.generate(
+#             **inputs,
+#             max_new_tokens=512,
+#             do_sample=True,  # Optional: for more natural responses
+#             temperature=0.7,  # Optional: controls randomness
+#             top_p=0.9  # Optional: nucleus sampling
+#         )
+#         response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+#         return response.split("<|assistant|>")[-1].strip()
+    
+#     except Exception as e:
+#         print(f"❌ Error during generation: {e}")
+#         return "Error generating response."
+
+# try:
+#     if torch.cuda.is_available():
+#         device = 0  # GPU
+#         print(f"✅ Using GPU: {torch.cuda.get_device_name(0)}")
+#     else:
+#         device = -1  # CPU
+#         print("⚠️ GPU not available. Falling back to CPU.")
+
+#     qa_pipeline = pipeline("text2text-generation", model="google/flan-t5-small", device=device)
+# except Exception as e:
+#     print(f"❌ Error loading AI model: {e}")
+#     qa_pipeline = None
+
+# def generate_ai_response(text: str) -> str:
+#     """Generate AI response from Flan-T5 small model."""
+#     if qa_pipeline is None:
+#         return "AI Model not loaded properly."
+    
+#     response = qa_pipeline(text, max_length=100)
+#     return response[0].get("generated_text", "").strip()
 
 # 🔹 Speech-to-Text with Deepgram
 async def transcribe_audio(audio_bytes):
@@ -89,9 +124,17 @@ def hinglish_to_english(text):
 # 🔹 FastAPI Setup
 app = FastAPI()
 
+origins = [
+    "http://localhost.tiangolo.com",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:8080",
+    "http://localhost:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost", "http://localhost:5173"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -110,11 +153,11 @@ async def process_audio(name: str = Form(...), purpose: str = Form(...), audio: 
     # 🔹 Step 2: Hinglish → English Translation
     english_text = hinglish_to_english(transcript)
 
-    # 🔹 Step 3: Generate AI Response
-    ai_response = generate_ai_response(english_text)
+    # # 🔹 Step 3: Generate AI Response
+    # ai_response = generate_ai_response(english_text)
 
-    if "not loaded properly" in ai_response:
-        return {"error": "AI model failed to load"}
+    # if "not loaded properly" in ai_response:
+    #     return {"error": "AI model failed to load"}
 
     # # 🔹 Step 4: English → Hinglish Translation
     # hinglish_response = english_to_hinglish(ai_response)
@@ -122,6 +165,6 @@ async def process_audio(name: str = Form(...), purpose: str = Form(...), audio: 
     return {
         "transcription": transcript,
         "translated_english": english_text,
-        "ai_response": ai_response,
+        # "ai_response": ai_response,
         # "final_hinglish": hinglish_response
     }
