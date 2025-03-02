@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import aiohttp
 from dotenv import load_dotenv
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-# import torch
+from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, LlamaForCausalLM 
+import torch
 # from unsloth import FastLanguageModel
 
 load_dotenv()
@@ -13,8 +13,6 @@ DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 DEEPGRAM_URL = "https://api.deepgram.com/v1/listen"
 
 # 🔹 Load Transformer AI Model for Text Generation
-import torch
-
 try:
     if torch.cuda.is_available():
         device = 0  # GPU
@@ -68,30 +66,25 @@ def hinglish_to_english(text):
     output = model_hi_en.generate(**input_text)
     return tokenizer_hi_en.decode(output[0]).strip()
 
-# # 🔹 Lazy Load English → Hinglish Model
-# tokenizer_en_hi = None
-# model_en_hi = None
+# device = "cuda" if torch.cuda.is_available() else "cpu"
+# print(f"✅ Using device: {device}")
 
-# def load_hinglish_model():
-#     """Load English to Hinglish Translation Model."""
-#     global tokenizer_en_hi, model_en_hi
-#     if tokenizer_en_hi is None or model_en_hi is None:
-#         model_en_hi, tokenizer_en_hi = FastLanguageModel.from_pretrained(
-#             "Hinglish-Project/llama-3-8b-English-to-Hinglish",
-#             max_seq_length=512,
-#             dtype=None,
-#             load_in_4bit=True
-#         )
+# tokenizer_en_hi = AutoTokenizer.from_pretrained('akashgoel-id/OpenHathi-7B-English-to-Hinglish')
+# model_en_hi = LlamaForCausalLM.from_pretrained(
+#     'akashgoel-id/OpenHathi-7B-English-to-Hinglish',
+#     torch_dtype=torch.bfloat16 if device == "cuda" else torch.float32
+# ).to(device)
 
 # def english_to_hinglish(text):
 #     """Translate English to Hinglish."""
-#     if model_en_hi is None or tokenizer_en_hi is None:
-#         load_hinglish_model()
-    
-#     prompt = f"### Instruction: Translate given text to Hinglish:\n\n### Input:\n{text}\n\n### Response:\n"
-#     inputs = tokenizer_en_hi([prompt], return_tensors="pt").to("cuda")
-#     outputs = model_en_hi.generate(**inputs, max_new_tokens=2048)
-#     return tokenizer_en_hi.batch_decode(outputs)[0].split("### Response:\n")[1].split("<|end_of_text|>")[0].strip()
+#     prompt = f"Translate from english to hinglish:\n{text}\n---\nTranslation:\n"
+#     inputs = tokenizer_en_hi(prompt, return_tensors="pt").to(device)
+#     generate_ids = model_en_hi.generate(inputs.input_ids, max_length=500)
+#     output = tokenizer_en_hi.batch_decode(
+#         generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
+#     )[0]
+#     # Optionally, clean out the prompt from the output if needed
+#     return output.split("Translation:\n")[-1].strip()
 
 # 🔹 FastAPI Setup
 app = FastAPI()
@@ -120,8 +113,8 @@ async def process_audio(name: str = Form(...), purpose: str = Form(...), audio: 
     # 🔹 Step 3: Generate AI Response
     ai_response = generate_ai_response(english_text)
 
-    # if "not loaded properly" in ai_response:
-    #     return {"error": "AI model failed to load"}
+    if "not loaded properly" in ai_response:
+        return {"error": "AI model failed to load"}
 
     # # 🔹 Step 4: English → Hinglish Translation
     # hinglish_response = english_to_hinglish(ai_response)
